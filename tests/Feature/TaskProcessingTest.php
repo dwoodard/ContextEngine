@@ -94,7 +94,7 @@ test('ProcessTaskJob processes a task and updates its status and result', functi
     ]);
 
     // Act: Dispatch the ProcessTaskJob
-    (new ProcessTaskJob($task->id, 'planner'))->handle();
+    ProcessTaskJob::dispatch($task->id, 'planner');
 
     // Assert: Verify the task is updated
     $task->refresh();

@@ -34,14 +34,14 @@ Storage
 
 
 Step 1: Create a New Laravel Project and Install Prism
-First, ensure your environment meets the requirements: PHP 8.2+ and Laravel 11 (latest). Also have MySQL and Redis available locally.
+First, ensure your environment meets the requirements: PHP 8.2+ and Laravel 12 (latest). Also have MySQL and Redis available locally.
 Create Laravel Project: In your terminal, run:
 
-Composer create-project laravel/laravel ContextEngine
+laravel new ContextEngine
 Cd ContextEngine
 This will create a new Laravel application directory. (Alternatively, use the Laravel installer if preferred).
 Require Prism Package: Require Laravel Prism via Composer. Prism provides a unified API to work with various LLM providers (OpenAI, Anthropic, etc.)​
-laravel-news.com
+
 . Run:
 
 composer require prism-php/prism

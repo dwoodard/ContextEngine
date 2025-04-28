@@ -41,7 +41,10 @@ class MemoryAgent implements AgentPattern
         }
 
         // Call LLM with the context-enhanced prompt
-        $response = Prism::text()->withPrompt($prompt)->asText();
+        $response = Prism::text()
+            ->using('ollama', 'llama3.2:latest')
+            ->withPrompt($prompt)
+            ->asText();
         $answer = $response->text ?? '';
 
         // Save context used (for transparency) and the result

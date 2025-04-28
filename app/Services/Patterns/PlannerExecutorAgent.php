@@ -5,7 +5,6 @@ namespace App\Services\Patterns;
 use App\Models\Task;
 use App\Services\AgentPattern;
 use Prism\Prism\Prism;
-use Prism\Prism\Provider;
 
 class PlannerExecutorAgent implements AgentPattern
 {
@@ -13,18 +12,10 @@ class PlannerExecutorAgent implements AgentPattern
     {
         $userQuery = $task->input;
 
-        // Step 1: Use LLM to create a plan (sequence of steps or outline)
         $planPrompt = "Break down the following task into a step-by-step plan:\nTask: {$userQuery}";
 
-        $prism = Prism::text();
-        $prism->using('ollama', 'llama3.2:latest');
-
-        // Ensure the provider is initialized before proceeding
-        if (! $prism->provider()) {
-            throw new \RuntimeException('Prism provider is not initialized.');
-        }
-
-        $planResponse = $prism
+        $planResponse = Prism::text()
+            ->using('ollama', 'llama3.2:latest')
             ->withPrompt($planPrompt)
             ->asText();
 
