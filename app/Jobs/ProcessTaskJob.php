@@ -33,22 +33,27 @@ class ProcessTaskJob implements ShouldQueue
     public function handle()
     {
         $task = Task::find($this->taskId);
-        if (! $task) {
-            return;
-        }
 
         $task->update(['status' => 'running']);
 
         try {
             $agent = $this->resolvePattern($this->pattern);
-            $agent->execute($task);
+
+            $output = $agent->execute($task);   // capture return value
+
+            // Persist result if the agent didn’t update the model itself
+            if (is_string($output) && empty($task->result)) {
+                $task->result = $output;
+            }
+
             $task->update(['status' => 'completed']);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $task->update([
                 'status' => 'failed',
                 'result' => null,
                 'meta' => array_merge($task->meta ?? [], ['error' => $e->getMessage()]),
             ]);
+            throw $e;
         }
     }
 
