@@ -10,6 +10,11 @@ test('example', function () {
 });
 
 it('can generate a response using the Ollama provider', function () {
+    // Skip this test if not running in the local environment
+    if (app()->environment() !== 'local') {
+        $this->markTestSkipped('This test is only run in the local environment.');
+    }
+
     // Arrange: Set up a sample prompt
     $prompt = 'What is the capital of France?';
 
