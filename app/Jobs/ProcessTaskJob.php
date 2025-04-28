@@ -59,15 +59,15 @@ class ProcessTaskJob implements ShouldQueue
 
     protected function resolvePattern(string $patternName): AgentPattern
     {
-        return match ($patternName) {
-            'planner' => new PlannerExecutorAgent,
-            'parallel' => new ParallelAgent,
-            'debate' => new DebateAgent,
-            'reflect' => new SelfReflectorAgent,
-            'memory' => new MemoryAgent,
-            'decompose' => new GoalDecomposerAgent,
-            default => new PlannerExecutorAgent,
-        };
+        return app(match ($patternName) {
+            'planner' => PlannerExecutorAgent::class,
+            'parallel' => ParallelAgent::class,
+            'debate' => DebateAgent::class,
+            'reflect' => SelfReflectorAgent::class,
+            'memory' => MemoryAgent::class,
+            'decompose' => GoalDecomposerAgent::class,
+            default => PlannerExecutorAgent::class,
+        });
     }
 
     public function getTaskId(): int

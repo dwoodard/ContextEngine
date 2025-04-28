@@ -6,5 +6,5 @@ use App\Models\Task;
 
 interface AgentPattern
 {
-    public function execute(Task $task): void;
+    public function execute(Task $task);
 }

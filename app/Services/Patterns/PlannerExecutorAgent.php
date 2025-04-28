@@ -8,7 +8,7 @@ use Prism\Prism\Prism;
 
 class PlannerExecutorAgent implements AgentPattern
 {
-    public function execute(Task $task): void
+    public function execute(Task $task)
     {
         $userQuery = $task->input;
 
@@ -32,10 +32,6 @@ class PlannerExecutorAgent implements AgentPattern
             ->withPrompt($execPrompt)
             ->asText();
 
-        $answer = $answerResponse->text ?? '';
-
-        // Update task with the result
-        $task->result = $answer;
-        $task->save();
+        return $answerResponse->text ?? '';
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Jobs\ProcessTaskJob;
 use App\Models\Task;
+use App\Services\Patterns\PlannerExecutorAgent;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
@@ -67,17 +68,26 @@ test('errors are returned in JSON format for API requests', function () {
 });
 
 test('ProcessTaskJob processes a task and updates its status and result', function () {
+    // Bind a fake agent that always returns predictable text
+    app()->bind(PlannerExecutorAgent::class, fn () => new class implements AgentPattern
+    {
+        public function execute(Task $task): string
+        {
+            return 'Quantum computing uses quantum bits to perform computations.';
+        }
+    }
+    );
+
     $task = Task::create([
         'input' => 'Explain quantum computing.',
         'pattern' => 'planner',
         'status' => 'pending',
     ]);
 
-    // this will really run because the queue is not faked here
-    ProcessTaskJob::dispatchSync($task->id, 'planner');
+    ProcessTaskJob::dispatchSync($task->id, 'planner');  // runs inline (no Queue::fake)
 
     $task->refresh();
-    expect($task->status)->toBe('completed')
-        ->and($task->result)->not()->toBeNull()
-        ->and($task->result)->toContain('quantum');
+
+    expect($task->status)->toBe('completed')          // ✅
+        ->and($task->result)->toContain('quantum');   // ✅
 });
