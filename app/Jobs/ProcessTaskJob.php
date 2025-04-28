@@ -63,4 +63,14 @@ class ProcessTaskJob implements ShouldQueue
             default => new PlannerExecutorAgent,
         };
     }
+
+    public function getTaskId(): int
+    {
+        return $this->taskId;
+    }
+
+    public function getPattern(): string
+    {
+        return $this->pattern;
+    }
 }

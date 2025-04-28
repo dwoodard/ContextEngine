@@ -31,7 +31,7 @@ test('a task can be created and dispatched for processing', function () {
     expect($task->status)->toBe('pending');
 
     Queue::assertPushed(ProcessTaskJob::class, function ($job) use ($task) {
-        return $job->taskId === $task->id && $job->pattern === 'planner';
+        return $job->getTaskId() === $task->id && $job->getPattern() === 'planner';
     });
 });
 

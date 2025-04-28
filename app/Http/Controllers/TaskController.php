@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
+use App\Jobs\ProcessTaskJob;
 use App\Models\Task;
 use Illuminate\Http\Request;
-use App\Jobs\ProcessTaskJob;
+use Illuminate\Support\Facades\Bus;
 
 class TaskController extends Controller
 {
@@ -44,7 +44,7 @@ class TaskController extends Controller
             'status' => 'pending',
         ]);
 
-        ProcessTaskJob::dispatch($task->id, $pattern);
+        Bus::dispatch(new ProcessTaskJob($task->id, $pattern));
 
         return response()->json([
             'task_id' => $task->id,
