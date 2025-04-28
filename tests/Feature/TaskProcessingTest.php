@@ -5,10 +5,6 @@ use App\Models\Task;
 use App\Services\Patterns\PlannerExecutorAgent;
 use Illuminate\Support\Facades\Queue;
 
-beforeEach(function () {
-    Queue::fake(); // Fake the queue to test job dispatching
-});
-
 test('example', function () {
     $response = $this->get('/');
 
@@ -68,26 +64,28 @@ test('errors are returned in JSON format for API requests', function () {
 });
 
 test('ProcessTaskJob processes a task and updates its status and result', function () {
-    // Bind a fake agent that always returns predictable text
-    app()->bind(PlannerExecutorAgent::class, fn () => new class implements AgentPattern
+    // no Queue::fake() here!
+
+    // Fake agent guarantees deterministic text
+    app()->bind(PlannerExecutorAgent::class, fn () => new class implements \App\Services\AgentPattern
     {
-        public function execute(Task $task): string
+        public function execute(\App\Models\Task $task): string
         {
             return 'Quantum computing uses quantum bits to perform computations.';
         }
     }
     );
 
-    $task = Task::create([
+    $task = \App\Models\Task::create([
         'input' => 'Explain quantum computing.',
         'pattern' => 'planner',
         'status' => 'pending',
     ]);
 
-    ProcessTaskJob::dispatchSync($task->id, 'planner');  // runs inline (no Queue::fake)
+    ProcessTaskJob::dispatchSync($task->id, 'planner');   // really runs
 
     $task->refresh();
 
-    expect($task->status)->toBe('completed')          // ✅
-        ->and($task->result)->toContain('quantum');   // ✅
+    expect($task->status)->toBe('completed')
+        ->and($task->result)->toContain('quantum');
 });
