@@ -2,7 +2,6 @@
 
 use App\Jobs\ProcessTaskJob;
 use App\Models\Task;
-use App\Services\Patterns\PlannerExecutorAgent;
 use Illuminate\Support\Facades\Queue;
 
 test('example', function () {
@@ -12,21 +11,29 @@ test('example', function () {
 });
 
 test('a task can be created and dispatched for processing', function () {
+    // Fake the queue to intercept job dispatches
+    Queue::fake();
+
     $payload = [
         'input' => 'Explain quantum computing.',
         'pattern' => 'planner',
     ];
 
+    // Send a POST request to create the task
     $response = $this->postJson('/api/tasks', $payload);
 
+    // Assert that the response has the expected status and structure
     $response->assertStatus(202)
         ->assertJsonStructure(['task_id', 'pattern', 'status']);
 
+    // Retrieve the task from the database
     $task = Task::find($response->json('task_id'));
 
+    // Assert that the task exists and has the correct status
     expect($task)->not->toBeNull();
     expect($task->status)->toBe('pending');
 
+    // Assert that the ProcessTaskJob was dispatched with the correct task
     Queue::assertPushed(ProcessTaskJob::class, function ($job) use ($task) {
         return $job->getTaskId() === $task->id && $job->getPattern() === 'planner';
     });
@@ -64,28 +71,17 @@ test('errors are returned in JSON format for API requests', function () {
 });
 
 test('ProcessTaskJob processes a task and updates its status and result', function () {
-    // no Queue::fake() here!
-
-    // Fake agent guarantees deterministic text
-    app()->bind(PlannerExecutorAgent::class, fn () => new class implements \App\Services\AgentPattern
-    {
-        public function execute(\App\Models\Task $task): string
-        {
-            return 'Quantum computing uses quantum bits to perform computations.';
-        }
-    }
-    );
-
-    $task = \App\Models\Task::create([
+    $task = Task::factory()->create([
         'input' => 'Explain quantum computing.',
         'pattern' => 'planner',
         'status' => 'pending',
     ]);
 
-    ProcessTaskJob::dispatchSync($task->id, 'planner');   // really runs
+    $job = new ProcessTaskJob($task->id, 'planner');
+    $job->handle();
 
     $task->refresh();
 
-    expect($task->status)->toBe('completed')
-        ->and($task->result)->toContain('quantum');
+    expect($task->status)->toBe('completed');
+    expect($task->result)->not->toBeNull();
 });

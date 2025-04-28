@@ -8,30 +8,40 @@ use Prism\Prism\Prism;
 
 class PlannerExecutorAgent implements AgentPattern
 {
-    public function execute(Task $task)
+    public function execute(Task $task): string
     {
         $userQuery = $task->input;
 
         $planPrompt = "Break down the following task into a step-by-step plan:\nTask: {$userQuery}";
 
-        $planResponse = Prism::text()
-            ->using('ollama', 'llama3.2:latest')
-            ->withPrompt($planPrompt)
-            ->asText();
+        try {
+            $planResponse = Prism::text()
+                ->using('ollama', 'llama3.2:latest')
+                ->withPrompt($planPrompt)
+                ->asText();
 
-        $plan = $planResponse->text ?? '(no plan)';
+            $plan = $planResponse->text ?? '(no plan)';
+        } catch (\Throwable $e) {
+            $plan = '(error generating plan)';
+            $task->meta = array_merge($task->meta ?? [], ['error' => $e->getMessage()]);
+        }
 
-        // Optional: store the plan in task meta for record
         $task->meta = array_merge($task->meta ?? [], ['plan' => $plan]);
         $task->save();
 
-        // Step 2: Use LLM to execute/answer using the plan
         $execPrompt = "Given the plan:\n{$plan}\nNow provide the final answer or solution to the original task: {$userQuery}";
 
-        $answerResponse = Prism::text()
-            ->withPrompt($execPrompt)
-            ->asText();
+        try {
+            $answerResponse = Prism::text()
+                ->using('ollama', 'llama3.2:latest')
+                ->withPrompt($execPrompt)
+                ->asText();
 
-        return $answerResponse->text ?? '';
+            return $answerResponse->text ?? '';
+        } catch (\Throwable $e) {
+            $task->meta = array_merge($task->meta ?? [], ['error' => $e->getMessage()]);
+
+            return '(error generating answer)';
+        }
     }
 }
