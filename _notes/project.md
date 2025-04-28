@@ -1,3 +1,38 @@
+```markdown
+php artisan about
+
+Environment  
+- Application Name: Laravel  
+- Laravel Version: 12.10.2  
+- PHP Version: 8.3.20  
+- Composer Version: 2.8.6  
+- Environment: local  
+- Debug Mode: ENABLED  
+- URL: contextengine.test  
+- Maintenance Mode: OFF  
+- Timezone: UTC  
+- Locale: en  
+
+Cache  
+- Config: NOT CACHED  
+- Events: NOT CACHED  
+- Routes: NOT CACHED  
+- Views: CACHED  
+
+Drivers  
+- Broadcasting: log  
+- Cache: database  
+- Database: mysql  
+- Logs: stack / single  
+- Mail: smtp  
+- Queue: redis  
+- Session: database  
+
+Storage  
+- public/storage: NOT LINKED  
+```
+
+
 Step 1: Create a New Laravel Project and Install Prism
 First, ensure your environment meets the requirements: PHP 8.2+ and Laravel 11 (latest). Also have MySQL and Redis available locally.
 Create Laravel Project: In your terminal, run:
