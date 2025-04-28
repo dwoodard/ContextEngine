@@ -2,6 +2,7 @@
 
 use App\Jobs\ProcessTaskJob;
 use App\Models\Task;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
@@ -52,4 +53,52 @@ test('a task result can be retrieved after processing', function () {
             'status' => 'completed',
             'result' => 'Quantum computing uses quantum bits to perform computations.',
         ]);
+});
+
+test('errors are returned in JSON format for API requests', function () {
+    $response = $this->postJson('/api/tasks', []); // Sending an empty payload to trigger validation error
+
+    $response->assertStatus(422) // Unprocessable Entity for validation errors
+        ->assertJsonStructure([
+            'message',
+            'errors' => [
+                'input', // Validation error for the missing 'input' field
+            ],
+        ]);
+});
+
+test('ProcessTaskJob updates task result and status', function () {
+    // Arrange: Create a task in the database
+
+    $task = Task::create([
+        'input' => 'Explain quantum computing.',
+        'pattern' => 'planner',
+        'status' => 'pending',
+    ]);
+
+    // Act: Dispatch the ProcessTaskJob
+    Bus::dispatch(new ProcessTaskJob($task->id, 'planner'));
+
+    // Assert: Verify the task is updated
+    $task->refresh();
+    expect($task->status)->toBe('completed');
+    expect($task->result)->not->toBeNull();
+});
+
+test('ProcessTaskJob processes a task and updates its status and result', function () {
+    // Arrange: Create a task in the database
+    $task = Task::create([
+        'input' => 'Explain quantum computing.',
+        'pattern' => 'planner',
+        'status' => 'pending',
+    ]);
+
+    // Act: Dispatch the ProcessTaskJob
+    (new ProcessTaskJob($task->id, 'planner'))->handle();
+
+    // Assert: Verify the task is updated
+    $task->refresh();
+    expect($task->status)->toBe('completed');
+    expect($task->result)->not->toBeNull();
+    expect($task->result)->toContain('quantum'); // Example assertion to check the result content
 });
