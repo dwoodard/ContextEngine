@@ -1,157 +1,378 @@
-```markdown
+# Context Engine with Laravel build on top of Prism and Relay
+
+```bash
 php artisan about
+```
 
-Environment  
-- Application Name: Laravel  
-- Laravel Version: 12.10.2  
-- PHP Version: 8.3.20  
-- Composer Version: 2.8.6  
-- Environment: local  
-- Debug Mode: ENABLED  
-- URL: contextengine.test  
-- Maintenance Mode: OFF  
-- Timezone: UTC  
-- Locale: en  
+|                  | **Setting**            | **Value**            |
+|------------------|------------------------|----------------------|
+| **Environment**  | Application Name       | Laravel              |
+|                  | Laravel Version        | 12.10.2             |
+|                  | PHP Version            | 8.3.20              |
+|                  | Composer Version       | 2.8.6               |
+|                  | Environment            | local               |
+|                  | Debug Mode             | ENABLED             |
+|                  | URL                    | contextengine.test  |
+|                  | Maintenance Mode       | OFF                 |
+|                  | Timezone               | UTC                 |
+|                  | Locale                 | en                  |
+| **Drivers**      | Broadcasting           | log                 |
+|                  | Cache                  | database            |
+|                  | Database               | mysql               |
+|                  | Logs                   | stack / single      |
+|                  | Mail                   | smtp                |
+|                  | Queue                  | redis               |
+|                  | Session                | database            |
 
-Cache  
-- Config: NOT CACHED  
-- Events: NOT CACHED  
-- Routes: NOT CACHED  
-- Views: CACHED  
 
-Drivers  
-- Broadcasting: log  
-- Cache: database  
-- Database: mysql  
-- Logs: stack / single  
-- Mail: smtp  
-- Queue: redis  
-- Session: database  
+## Setup For Context Engine
 
-Storage  
-- public/storage: NOT LINKED  
+### Step 1: Create a New Laravel Project and Install Prism
+
+Ensure your environment meets the following requirements:
+
+- **PHP**: Version 8.3 or higher
+- **Laravel**: Version 12 (latest)
+- **Database**: MySQL
+- **Queue**: Redis
+
+#### Create a New Laravel Project
+
+Run the following command in your terminal to create a new Laravel project:
+
+```bash
+laravel new ContextEngine
 ```
 
 
-Step 1: Create a New Laravel Project and Install Prism
-First, ensure your environment meets the requirements: PHP 8.2+ and Laravel 12 (latest). Also have MySQL and Redis available locally.
-Create Laravel Project: In your terminal, run:
+### Step 1.1: Set Up Laravel Project Directory
 
-laravel new ContextEngine
-Cd ContextEngine
-This will create a new Laravel application directory. (Alternatively, use the Laravel installer if preferred).
-Require Prism Package: Require Laravel Prism via Composer. Prism provides a unified API to work with various LLM providers (OpenAI, Anthropic, etc.)​
+Navigate to the directory where you want to create your Laravel project and run the following command:
 
-. Run:
+```bash
+cd ContextEngine
+```
 
+
+This will create a new Laravel application directory named `ContextEngine`. Alternatively, you can use the Laravel installer if you have it installed.
+
+### Step 1.2: Install Prism Package
+
+Require the Prism package via Composer. Prism provides a unified API to work with various LLM providers (e.g., OpenAI, Anthropic, etc.). Run the following command:
+
+```bash
 composer require prism-php/prism
-Optional: If you plan to integrate external tool usage via Model Context Protocol (MCP) (for example, web browsing or code execution tools), also install Prism’s Relay package:
+```
 
+### Step 1.3: Install Relay Package
+
+```bash
 composer require prism-php/relay
-The Relay package provides seamless integration between Prism and external MCP tool servers​
-github.com
-, allowing your agents to perform actions like web searches or API calls as part of their reasoning.
-Publish Package Configs: After installing Prism (and Relay), publish their configuration files:
+```
 
+### Relay Package and External Tool Integration
+
+The Relay package enables seamless integration with external MCP tool servers, allowing agents to perform actions like web searches or API calls as part of their reasoning process.
+
+#### Install Prism and Relay Packages
+
+Run the following command to install the Prism package:
+
+```bash
+composer require prism-php/prism
+```
+
+If you plan to integrate external tool usage via Model Context Protocol (MCP) (e.g., web browsing or code execution tools), install Prism’s Relay package as well:
+
+```bash
+composer require prism-php/relay
+```
+
+The Relay package provides seamless integration between Prism and external MCP tool servers, enabling agents to perform advanced actions like web searches or API calls.
+
+#### Publish Configuration Files
+
+After installing Prism (and Relay), publish their configuration files using the following commands:
+
+```bash
 php artisan vendor:publish --tag=prism-config
-php artisan vendor:publish --tag=relay-config   # (if Relay installed)
-This will create config/prism.php (and config/relay.php for Relay). We’ll adjust these configs as needed later.
-Step 2: Configure Environment (.env for MySQL, Redis, API Keys)
-Open the .env file in the project root and set up the database, cache/queue, and any API keys for LLM providers:
-Application Key: If not already set by the installer, generate the app key with php artisan key:generate. Ensure APP_KEY is set in .env.
-Database (MySQL): Update the MySQL connection details. For example, if you have a local MySQL with a database named laravel and no password for root:
-dotenv
+php artisan vendor:publish --tag=relay-config   
+```
 
+These configuration files can be adjusted as needed later.
 
-DB_CONNECTION=mysql  
-DB_HOST=127.0.0.1  
-DB_PORT=3306  
-DB_DATABASE=laravel  
-DB_USERNAME=root  
-DB_PASSWORD=          # (empty or your password)
-Queue (Redis): Enable Redis for queue and caching. For example:
-dotenv
+#### Step 2: Configure Environment Variables
 
+Open the `.env` file in the project root and set up the following:
 
-QUEUE_CONNECTION=redis  
-CACHE_DRIVER=redis  
-REDIS_HOST=127.0.0.1  
-REDIS_PORT=6379  
-Make sure you have a Redis server running locally (default on port 6379). Laravel will use it for job queues. If you don't have the PHP Redis extension, you can require the predis client (composer require predis/predis) or install the extension.
-Prism LLM Provider: Configure your default LLM provider in config/prism.php or via .env. Prism supports multiple providers; you can choose one (e.g., OpenAI’s GPT-4) for initial development. For example, to use OpenAI, add your API key to .env:
-dotenv
+1. **Application Key**: If not already set by the installer, generate the app key using:
 
+    ```bash
+    php artisan key:generate
+    ```
 
+    Ensure the `APP_KEY` is set in `.env`.
+
+2. **Database (MySQL)**: Update the MySQL connection details. For example, for a local MySQL database named `laravel` with no password for the `root` user:
+
+    ```dotenv
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=laravel
+    DB_USERNAME=root
+    DB_PASSWORD=
+    ```
+
+3. **Queue and Cache (Redis)**: Enable Redis for queue and caching:
+
+    ```dotenv
+    QUEUE_CONNECTION=redis
+    CACHE_DRIVER=redis
+    REDIS_HOST=127.0.0.1
+    REDIS_PORT=6379
+    ```
+
+4. **API Keys for LLM Providers**: Add API keys for your chosen LLM provider. For example, for OpenAI:
+
+    ```dotenv
+    OPENAI_API_KEY=your-openai-api-key
+    ```
+
+    These settings will allow Laravel to connect to MySQL and Redis, and Prism to authenticate with the LLM provider.
+
+   ### Database Configuration
+
+    Update your `.env` file with the following MySQL settings:
+
+    ```dotenv
+    DB_CONNECTION=mysql  
+    DB_HOST=127.0.0.1  
+    DB_PORT=3306  
+    DB_DATABASE=laravel  
+    DB_USERNAME=root  
+    DB_PASSWORD=          # (empty or your password)
+    ```
+
+   ### Queue and Cache Configuration
+
+    Enable Redis for queue and caching. Add the following to your `.env` file:
+
+    ```dotenv
+    QUEUE_CONNECTION=redis  
+    CACHE_DRIVER=redis  
+    REDIS_HOST=127.0.0.1  
+    REDIS_PORT=6379  
+    ```
+
+    Ensure you have a Redis server running locally (default on port 6379). Laravel will use it for job queues. If you don't have the PHP Redis extension, you can install the `predis` client:
+
+```bash
+composer require predis/predis
+```
+
+### Prism LLM Provider Configuration
+
+Configure your default LLM provider in `config/prism.php` or via `.env`. For example, to use OpenAI, add your API key to `.env`:
+
+```dotenv
 OPENAI_API_KEY=your-openai-api-key
-In config/prism.php, ensure the providers array has an entry for 'openai' using the above key, or set Prism’s default provider to OpenAI. For instance, the config might look like:
-php
+```
 
+In `config/prism.php`, ensure the `providers` array includes an entry for `openai` using the above key. You can also set Prism’s default provider and model. For example:
 
-'providers' => [
-    'openai' => [
-        'api_key' => env('OPENAI_API_KEY'),
-        'base_url' => env('OPENAI_URL', 'https://api.openai.com/v1'),
-        // other settings...
+```php
+    'providers' => [
+        'ollama' => [
+            'base_url' => env('OLLAMA_URL', 'https://api.ollama.ai/v1'),
+        ],
+        'openai' => [
+            'api_key' => env('OPENAI_API_KEY'),
+            'base_url' => env('OPENAI_URL', 'https://api.openai.com/v1'),
+            // other settings...
+        ],
+        // ... other providers like 'anthropic', 'google', etc.
     ],
-    // ... other providers like 'anthropic', etc.
-],
-'default_provider' => 'openai',
-'default_model' => 'gpt-4',  // or whichever model you have access to
-Prism Relay (Optional): If using Relay for MCP, configure config/relay.php. For example, define an MCP server (like a local Puppeteer tool server) in the servers array. E.g.:
-php
+    'default_provider' => 'openai',
+    'default_model' => 'gpt-4',  // or whichever model you have access to
+```
 
+### Prism Relay
 
+When using Relay for MCP (Model Context Protocol), configure `config/relay.php`. For example, define an MCP server (like a local Puppeteer tool server) in the `servers` array:
+
+```php
 'servers' => [
     'puppeteer' => [
         'command' => ['node', 'path/to/puppeteer_mcp_server.js'],
         'timeout' => 30,
-        'env' => ['MCP_SERVER_PORT' => '3001']
+        'env' => ['MCP_SERVER_PORT' => '3001'],
     ],
     // ... other servers or HTTP endpoints
-]
-This is just an example; ensure you have an MCP server set up if you want to use it. With Relay configured, an agent can use external tools by calling Relay::tools('puppeteer') in Prism (we'll see an example later).
-After updating .env, save the file. These settings will allow Laravel to connect to MySQL and Redis, and Prism to authenticate with the LLM provider.
-Step 3: Project Structure Overview
-Next, let's outline the project structure and the components we will create. We will organize our code into controllers, models, services (for agent patterns), and jobs. Here’s a high-level breakdown of key files/folders to be added to the Laravel app:
-graphql
+],
+```
+
+Relay enables integration with external tools, such as web browsing or API calls, to enhance agent reasoning capabilities.
 
 
+```php
+'servers' => [
+    'puppeteer' => [
+        'command' => ['node', base_path('path/to/puppeteer_mcp_server.js')],
+        'timeout' => 30,
+        'env' => [
+            'MCP_SERVER_PORT' => env('MCP_SERVER_PORT', '3001'),
+        ],
+    ],
+    // Add additional servers or HTTP endpoints as needed
+],
+```
+
+### Using MCP Server with Relay
+
+If you plan to use an MCP server for external tool integration, ensure it is properly set up. For example, you can configure a Puppeteer-based MCP server to enable web browsing capabilities. With Relay configured, an agent can utilize external tools by calling `Relay::tools('puppeteer')` in Prism. This allows seamless integration of external functionalities into your AI workflows.
+
+After updating the `.env` file with the necessary configurations, save the file. These settings will enable Laravel to connect to MySQL and Redis, and allow Prism to authenticate with the LLM provider.
+
+---
+
+### Step 3: Project Structure Overview
+
+To maintain a clean and modular codebase, we will organize the project into the following components:
+
+```plaintext
 ContextEngine/
-├── app/
-│   ├── Http/
-│   │   └── Controllers/
-│   │       └── TaskController.php        # API controller for task submission & retrieval
-│   ├── Models/
-│   │   └── Task.php                      # Eloquent model for tasks (user requests & results)
-│   ├── Services/
-│   │   ├── AgentPattern.php             # Interface or abstract base for agent pattern classes
-│   │   └── Patterns/
-│   │       ├── PlannerExecutorAgent.php   # Implementation of Planner-Executor pattern
-│   │       ├── ParallelAgent.php          # Implementation of Parallelization pattern
-│   │       ├── DebateAgent.php            # Implementation of Debate & Consensus pattern
-│   │       ├── SelfReflectorAgent.php     # Implementation of Self-Reflection pattern
-│   │       ├── MemoryAgent.php            # Implementation of Memory-Augmented pattern
-│   │       └── GoalDecomposerAgent.php    # Implementation of Goal Decomposition pattern
-│   └── Jobs/
-│       ├── ProcessTaskJob.php            # Job to orchestrate a task using the chosen pattern
-│       └── SubTaskJob.php                # (Optional) Job for handling sub-tasks (used by some patterns)
-├── routes/
-│   └── api.php                           # Define API routes (e.g., POST /tasks, GET /tasks/{id})
-├── database/
-│   ├── migrations/
-│   │   └── 2025_04_26_000000_create_tasks_table.php   # Migration for tasks table
-│   └── seeders/ ...                      # (if needed)
-└── config/
-    ├── prism.php                         # Prism configuration (published earlier)
-    └── relay.php                         # Relay configuration (if using MCP)
-Folder/File Explanations:
-TaskController: Handles incoming API requests to create a new task and to fetch task status/results.
-Task Model & Migration: Represents tasks in the database, storing fields like the user’s prompt, selected pattern, status, and the result output.
-Services/AgentPattern: Contains the logic for deciding which agent pattern to use (Task Interpreter/Matcher) and base interfaces for pattern classes. Each pattern (PlannerExecutor, ParallelAgent, etc.) will be implemented in its own class under Services/Patterns. This modular design makes it easy to add new patterns by creating a new class.
-Jobs: The heavy-lifting of calling LLMs and orchestrating multi-step processes is done in queued Jobs. ProcessTaskJob is a high-level job that runs the selected agent pattern for a task. Some complex patterns may use additional jobs (e.g., SubTaskJob) for parallel or distributed work. We use Laravel’s queue system (backed by Redis) to run these jobs asynchronously.
-With this structure in mind, we can proceed to implement each piece.
-Step 4: Database Migration and Model for Tasks
-We need a database table to persist tasks and their results. Let’s create a migration for a tasks table and the corresponding Eloquent model. Create Migration and Model: Use Artisan to generate them:
+    ├── app/
+    │   ├── Http/
+    │   │   └── Controllers/
+    │   │       └── TaskController.php        # Handles API requests for task submission and retrieval
+    │   ├── Models/
+    │   │   └── Task.php                      # Eloquent model for tasks
+    │   ├── Services/
+    │   │   ├── AgentPattern.php             # Base interface for agent pattern classes
+    │   │   └── Patterns/
+    │   │       ├── PlannerExecutorAgent.php   # Implements Planner-Executor pattern
+    │   │       ├── ParallelAgent.php          # Implements Parallelization pattern
+    │   │       ├── DebateAgent.php            # Implements Debate & Consensus pattern
+    │   │       ├── SelfReflectorAgent.php     # Implements Self-Reflection pattern
+    │   │       ├── MemoryAgent.php            # Implements Memory-Augmented pattern
+    │   │       └── GoalDecomposerAgent.php    # Implements Goal Decomposition pattern
+    │   └── Jobs/
+    │       ├── ProcessTaskJob.php            # Orchestrates task execution using the chosen pattern
+    │       └── SubTaskJob.php                # Handles sub-tasks for parallel or decomposed tasks
+    ├── routes/
+    │   └── api.php                           # Defines API routes (e.g., POST /tasks, GET /tasks/{id})
+    ├── database/
+    │   ├── migrations/
+    │   │   └── 2025_04_26_000000_create_tasks_table.php   # Migration for tasks table
+    │   └── seeders/                          # (Optional) Seeders for initial data
+    └── config/
+        ├── prism.php                         # Prism configuration (published earlier)
+        └── relay.php                         # Relay configuration (if using MCP)
+```
+
+### TaskController
+
+The `TaskController` is responsible for handling incoming API requests. It provides endpoints to create a new task and to fetch the status or results of an existing task. This controller ensures that tasks are processed asynchronously and results are returned once available.
+
+### Task Model and Migration
+
+The `Task` model represents tasks in the database. It stores essential fields such as the user’s prompt, the selected agent pattern, the task’s status, and the final result output. A corresponding migration defines the schema for the `tasks` table, ensuring proper storage and retrieval of task data.
+
+### Services and Agent Patterns
+
+The `Services/AgentPattern` directory contains the logic for selecting and executing agent patterns. It includes:
+
+- **Task Interpreter/Matcher**: Determines the most suitable agent pattern based on the user’s input.
+- **Base Interface**: Provides a contract for all agent pattern classes to implement.
+- **Pattern Implementations**: Each agent pattern (e.g., `PlannerExecutor`, `ParallelAgent`) is implemented as a separate class under `Services/Patterns`. This modular design allows for easy addition of new patterns by simply creating a new class.
+
+### Jobs
+
+The heavy lifting of task processing is handled by queued jobs. Key jobs include:
+
+- **`ProcessTaskJob`**: A high-level job that orchestrates the execution of the selected agent pattern for a task.
+- **`SubTaskJob`**: Used by complex patterns (e.g., parallel processing) to handle distributed or concurrent work.
+
+Laravel’s queue system, backed by Redis, ensures these jobs run asynchronously, enabling efficient task processing without blocking API responses.
+
+---
+
+### Step 4: Database Migration and Model for Tasks
+
+To persist tasks and their results, we need a database table. This table will store information such as the user’s input, the selected pattern, the task’s status, and the result. Let’s create a migration and model for the `tasks` table.
+
+#### Create Migration and Model
+
+Use the following Artisan command to generate the migration and model:
+
+```bash
+php artisan make:model Task -m
+```
+
+This command creates:
+
+- A `Task` model in `app/Models/Task.php`.
+- A timestamped migration file in `database/migrations/`.
+
+#### Define the Schema
+
+Open the generated migration file and define the schema for the `tasks` table. For example:
+
+```php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateTasksTable extends Migration {
+    public function up() {
+        Schema::create('tasks', function (Blueprint $table) {
+            $table->id();
+            $table->string('pattern')->nullable();       // The agent pattern chosen (e.g., 'planner', 'parallel', etc.)
+            $table->text('input');                       // The user prompt or task description
+            $table->text('result')->nullable();          // Final result from the agent(s)
+            $table->string('status')->default('pending'); // Task status: 'pending', 'running', 'completed', 'failed'
+            $table->json('meta')->nullable();            // (Optional) Store additional data (sub-results, logs, memory, etc.)
+            $table->timestamps();
+        });
+    }
+
+    public function down() {
+        Schema::dropIfExists('tasks');
+    }
+}
+```
+
+#### Run the Migration
+
+Execute the migration to create the `tasks` table in the database:
+
+```bash
+php artisan migrate
+```
+
+#### Define the Task Model
+
+In `app/Models/Task.php`, define the model to match the table schema:
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Task extends Model
+{
+    protected $fillable = ['pattern', 'input', 'result', 'status', 'meta'];
+
+    protected $casts = [
+        'meta' => 'array',  // Cast the meta JSON to an array
+    ];
+}
+```
+
+The `fillable` property allows mass assignment for the specified fields, and the `casts` property ensures the `meta` field is automatically converted to an array for easy manipulation.
+
+With the migration and model in place, the application is ready to store and manage tasks in the database.
 
 php artisan make:model Task -m
 This creates app/Models/Task.php and a timestamped migration file in database/migrations/. Open the migration file and define the schema, for example:
