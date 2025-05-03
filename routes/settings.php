@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\TokenController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,6 +15,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::put('settings/password', [PasswordController::class, 'update'])->name('password.update');
+
+    Route::get('/settings/tokens', [TokenController::class, 'index'])->name('settings.tokens.index');
+    Route::post('/settings/tokens', [TokenController::class, 'store'])->name('settings.tokens.store');
+    Route::delete('/settings/tokens/{token}', [TokenController::class, 'destroy'])->name('settings.tokens.destroy');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/Appearance');
