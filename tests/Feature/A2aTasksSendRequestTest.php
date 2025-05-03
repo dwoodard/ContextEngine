@@ -59,6 +59,10 @@ test('it validates message parts data structure', function () {
             'role' => 'user',
             'parts' => [
                 [
+                    'type' => 'text',
+                    'text' => 'This is a valid text part.',
+                ],
+                [
                     'type' => 'data',
                     'data' => [
                         'key' => 'value',
@@ -71,4 +75,5 @@ test('it validates message parts data structure', function () {
     ]);
 
     $response->assertStatus(202);
+
 });
