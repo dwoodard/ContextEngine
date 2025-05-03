@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class A2AMessage extends Model
 {
+    protected $table = 'a2a_messages';
+
     protected $fillable = [
         'task_id',
         'role',
