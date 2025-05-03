@@ -22,9 +22,8 @@ test('a task can be created and dispatched for processing', function () {
 
     // Send a POST request to create the task
     $response = $this->postJson('/api/tasks', $payload, [
-        'Authorization' => 'Bearer ' . $user->createToken('TestToken')->plainTextToken
+        'Authorization' => 'Bearer '.$user->createToken('TestToken')->plainTextToken,
     ]);
-
 
     // Assert that the response has the expected status and structure
     $response->assertStatus(202)
@@ -63,7 +62,14 @@ test('a task result can be retrieved after processing', function () {
 });
 
 test('errors are returned in JSON format for API requests', function () {
-    $response = $this->postJson('/api/tasks', []); // Sending an empty payload to trigger validation error
+    $user = \App\Models\User::factory()->create();
+
+    // Sending an empty payload to trigger validation error
+    $response = $this->postJson('/api/tasks', [],
+        [
+            'Authorization' => 'Bearer '.$user->createToken('TestToken')->plainTextToken,
+        ]
+    );
 
     $response->assertStatus(422) // Unprocessable Entity for validation errors
         ->assertJsonStructure([
