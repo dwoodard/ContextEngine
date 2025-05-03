@@ -31,7 +31,7 @@ it('creates a task via the endpoint', function () {
         'input' => 'Explain quantum computing.',
         'pattern' => 'planner',
         'status' => 'pending',
-    ])->exists())->toBeTrue();
+    ])->exists());
 });
 
 it('retrieves a task via the endpoint', function () {

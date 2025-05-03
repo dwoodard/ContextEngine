@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;  // The new A2A controller
 
 Route::get('/tasks', [TaskController::class, 'index']); // List all active tasks
-Route::post('/tasks', [TaskController::class, 'store']);
+Route::post('/tasks', [TaskController::class, 'store'])->middleware('auth:sanctum');
 Route::get('/tasks/{task}', [TaskController::class, 'show']);
 
 // --- A2A Protocol Routes ---
