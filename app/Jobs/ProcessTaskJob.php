@@ -15,6 +15,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Config;
 
 class ProcessTaskJob implements ShouldQueue
 {
@@ -33,26 +34,58 @@ class ProcessTaskJob implements ShouldQueue
     public function handle()
     {
         $task = Task::find($this->taskId);
+        if (! $task) {
+            return;
+        }
 
-        $task->update(['status' => 'running']);
+        $task->update([
+            'status' => 'running',
+            'a2a_status' => Config::get('a2a.status_map.running'),
+        ]);
 
         try {
             $agent = $this->resolvePattern($this->pattern);
+            $output = $agent->execute($task);
 
-            $output = $agent->execute($task);   // capture return value
+            $nextSequenceId = ($task->a2a_last_message_sequence ?? 0) + 1;
+            $finalResultText = is_string($output) ? $output : $task->result;
 
-            // Persist result if the agent didn’t update the model itself
-            if (is_string($output) && empty($task->result)) {
-                $task->result = $output;
+            if (! empty($finalResultText)) {
+                $task->a2aMessages()->create([
+                    'role' => 'agent',
+                    'sequence_id' => $nextSequenceId,
+                    'parts' => [['type' => 'text', 'text' => $finalResultText]],
+                ]);
+                $task->a2a_last_message_sequence = $nextSequenceId; // Update sequence on task
+
+                // Explicitly update the result field
+                $task->result = $finalResultText;
             }
 
-            $task->update(['status' => 'completed']);
+            $task->update([
+                'status' => 'completed',
+                'a2a_status' => Config::get('a2a.status_map.completed'),
+                'result' => $task->result, // Ensure result is saved
+                'a2a_last_message_sequence' => $task->a2a_last_message_sequence, // Save the updated sequence
+            ]);
+
         } catch (\Throwable $e) {
+            $nextSequenceId = ($task->a2a_last_message_sequence ?? 0) + 1;
+            $task->a2aMessages()->create([
+                'role' => 'agent',
+                'sequence_id' => $nextSequenceId,
+                'parts' => [['type' => 'text', 'text' => 'Task failed: '.$e->getMessage()]],
+            ]);
+            $task->a2a_last_message_sequence = $nextSequenceId; // Update sequence on task
+
             $task->update([
                 'status' => 'failed',
+                'a2a_status' => Config::get('a2a.status_map.failed'),
                 'result' => null,
                 'meta' => array_merge($task->meta ?? [], ['error' => $e->getMessage()]),
+                'a2a_last_message_sequence' => $task->a2a_last_message_sequence, // Save the updated sequence
             ]);
+
             throw $e;
         }
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Jobs\ProcessTaskJob;
 use App\Models\Task;
+use App\Services\TaskPatternMatcher;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -32,7 +33,7 @@ class TaskController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, TaskPatternMatcher $matcher)
     {
         // Validate input - ensure at least a prompt or input is provided
         $data = $request->validate([
@@ -41,7 +42,7 @@ class TaskController extends Controller
         ]);
 
         // Determine which agent pattern to use
-        $pattern = $data['pattern'] ?? $this->matchPattern($data['input']);
+        $pattern = $data['pattern'] ?? $matcher->match($data['input']);
 
         // Create a new task record in DB with status 'pending'
         $task = Task::create([
@@ -98,27 +99,5 @@ class TaskController extends Controller
     public function destroy(Task $task)
     {
         //
-    }
-
-    /**
-     * Simple Task Interpreter/Pattern Matcher.
-     */
-    protected function matchPattern(string $userInput): string
-    {
-        // **Basic heuristic pattern selection**
-        // (This can be as complex as needed, even using an LLM to classify the task)
-        $input = strtolower($userInput);
-        if (str_contains($input, ' versus') || str_contains($input, ' vs ')) {
-            return 'debate';  // user is asking for comparison -> debate pattern
-        }
-        if (preg_match('/\b(and|&|,)\b/', $input)) {
-            return 'parallel';  // multiple parts in query -> parallelize
-        }
-        if (str_contains($input, 'step') || str_contains($input, 'plan')) {
-            return 'planner';  // explicit steps or planning needed
-        }
-
-        // Default fallback:
-        return 'planner';  // default to planner-executor if unsure
     }
 }

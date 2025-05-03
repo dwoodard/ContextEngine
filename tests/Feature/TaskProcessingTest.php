@@ -13,6 +13,7 @@ test('example', function () {
 test('a task can be created and dispatched for processing', function () {
     // Fake the queue to intercept job dispatches
     Queue::fake();
+    $user = \App\Models\User::factory()->create();
 
     $payload = [
         'input' => 'Explain quantum computing.',
@@ -20,7 +21,9 @@ test('a task can be created and dispatched for processing', function () {
     ];
 
     // Send a POST request to create the task
-    $response = $this->postJson('/api/tasks', $payload);
+    $response = $this->postJson('/api/tasks', $payload, [
+        'Authorization' => 'Bearer '.$user->createToken('TestToken')->plainTextToken,
+    ]);
 
     // Assert that the response has the expected status and structure
     $response->assertStatus(202)
@@ -59,7 +62,14 @@ test('a task result can be retrieved after processing', function () {
 });
 
 test('errors are returned in JSON format for API requests', function () {
-    $response = $this->postJson('/api/tasks', []); // Sending an empty payload to trigger validation error
+    $user = \App\Models\User::factory()->create();
+
+    // Sending an empty payload to trigger validation error
+    $response = $this->postJson('/api/tasks', [],
+        [
+            'Authorization' => 'Bearer '.$user->createToken('TestToken')->plainTextToken,
+        ]
+    );
 
     $response->assertStatus(422) // Unprocessable Entity for validation errors
         ->assertJsonStructure([
@@ -75,6 +85,7 @@ test('ProcessTaskJob processes a task and updates its status and result', functi
         'input' => 'Explain quantum computing.',
         'pattern' => 'planner',
         'status' => 'pending',
+        'a2a_task_id' => 'test-a2a-id', // Ensure this field is set
     ]);
 
     $job = new ProcessTaskJob($task->id, 'planner');
@@ -84,4 +95,21 @@ test('ProcessTaskJob processes a task and updates its status and result', functi
 
     expect($task->status)->toBe('completed');
     expect($task->result)->not->toBeNull();
+});
+
+test('ProcessTaskJob sets final a2a_status correctly on success', function () {
+    $task = Task::factory()->create([
+        'input' => 'Explain quantum computing.',
+        'pattern' => 'planner',
+        'status' => 'pending',
+        'a2a_task_id' => 'test-a2a-id',
+    ]);
+
+    $job = new ProcessTaskJob($task->id, 'planner');
+    $job->handle();
+
+    $task->refresh();
+
+    expect($task->status)->toBe('completed');
+    expect($task->a2a_status)->toBe('completed');
 });
