@@ -29,9 +29,7 @@ class A2aTasksSendRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('tasks', 'a2a_task_id')->where(function ($query) {
-                    return $query->whereNull('id');
-                }),
+                'unique:tasks,a2a_task_id,NULL,id,deleted_at,NULL', // Check for unique task ID
             ],
             'message' => ['required', 'array'],
             'message.role' => ['required', Rule::in(['user'])],
@@ -39,9 +37,11 @@ class A2aTasksSendRequest extends FormRequest
             'message.parts.*' => ['required', 'array'],
             'message.parts.*.type' => ['required', Rule::in(['text', 'file', 'data'])],
             'message.parts.*.text' => ['required_if:message.parts.*.type,text', 'string'],
-            'message.parts.*.mimeType' => ['required_if:message.parts.*.type,file', 'string'],
-            'message.parts.*.uri' => ['required_if:message.parts.*.type,file', 'string', 'url'],
-            'message.parts.*.jsonData' => ['required_if:message.parts.*.type,data', 'json'],
+            'message.parts.*.file' => ['required_if:message.parts.*.type,file', 'array'],
+            'message.parts.*.file.mimeType' => ['required', 'string'],
+            'message.parts.*.file.uri' => ['required_without:message.parts.*.file.bytes', 'string', 'url'],
+            'message.parts.*.file.bytes' => ['required_without:message.parts.*.file.uri', 'string'],
+            'message.parts.*.data' => ['required_if:message.parts.*.type,data', 'array'],
         ];
     }
 

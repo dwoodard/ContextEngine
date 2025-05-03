@@ -10,9 +10,11 @@ return [
     'agent' => [
         'displayName' => env('A2A_AGENT_DISPLAY_NAME', config('app.name').' Agent'),
         'description' => env('A2A_AGENT_DESCRIPTION', 'An agent powered by '.config('app.name')),
-        // Add other relevant metadata like icons, publisher, etc.
-        // 'publisher': 'Your Company Name',
-        // 'iconUri': 'URL to an icon',
+        'version' => env('A2A_AGENT_VERSION', '1.0.0'), // Added agent version
+        'provider' => [
+            'organization' => env('A2A_AGENT_PROVIDER_ORG', 'Default Organization'),
+            'url' => env('A2A_AGENT_PROVIDER_URL', null), // Optional provider URL
+        ],
     ],
 
     /*
@@ -29,18 +31,15 @@ return [
         // List of capabilities supported by this agent.
         'capabilities' => [
             'tasks/send',
-            // Add 'tasks/sendSubscribe' and 'streaming' if you implement SSE
-            // Add 'pushNotifications' if you implement webhooks
+            'tasks/sendSubscribe',
+            'streaming',
         ],
 
         // Authentication methods supported.
         'authentication' => [
             [
                 'type' => 'bearer', // For Laravel Sanctum API Tokens
-                // Optionally add details about how to obtain a token if public
-                // 'instructionsUri': 'https://your-docs.com/a2a-auth'
             ],
-            // Add other methods like 'apiKey', 'oauth2' if needed
         ],
     ],
 
@@ -56,8 +55,7 @@ return [
         'running' => 'working',
         'completed' => 'completed',
         'failed' => 'failed',
-        'awaiting_input' => 'input-required', // Example if you add this state
-        // Add 'canceled' if applicable
+        'awaiting_input' => 'input-required',
     ],
 
     'reverse_status_map' => [
@@ -67,7 +65,6 @@ return [
         'completed' => 'completed',
         'failed' => 'failed',
         'input-required' => 'awaiting_input',
-        // 'canceled' => 'canceled',
     ],
 
     /*

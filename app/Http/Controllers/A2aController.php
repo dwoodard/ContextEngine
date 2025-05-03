@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\A2aTasksSendRequest;
 use App\Jobs\ProcessTaskJob;
-use App\Models\A2AMessage; // <-- Import the new message model
 use App\Models\Task;
 use App\Services\TaskPatternMatcher;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +30,6 @@ class A2aController extends Controller
                 ['name' => 'General Task Processing', 'description' => 'Processes general user queries.'],
                 ['name' => 'Debate Simulation', 'description' => 'Simulates a debate between perspectives.'],
             ],
-             // Remove redundant/incorrect keys like 'name', 'description', 'version', 'endpoints' at the top level
         ];
 
         return response()->json($agentCard);
@@ -66,7 +64,7 @@ class A2aController extends Controller
                 return response()->json(['error' => 'Could not extract valid input text.'], 400);
             }
 
-            $pattern = $request->input('pattern') ?? $matcher->match($userInput); // Use the injected matcher
+            $pattern = $request->input('pattern') ?? $matcher->match($userInput);
 
             // Create the main Task record
             $task = Task::create([
@@ -78,7 +76,7 @@ class A2aController extends Controller
                 // Remove a2a_meta for messages if using separate table
                 'a2a_meta' => ['artifacts' => []], // Keep for artifacts for now
                 'a2a_last_message_sequence' => 0, // Start sequence
-                'meta' => [ /* keep other internal meta if needed */],
+                'meta' => [/* keep other internal meta if needed */],
             ]);
 
             // Create the first A2A Message record
@@ -87,6 +85,7 @@ class A2aController extends Controller
                 'sequence_id' => 1, // First message
                 'parts' => $a2aMessagePayload['parts'],
             ]);
+
             $task->a2a_last_message_sequence = 1; // Update sequence on task
             $task->save();
 
@@ -96,21 +95,21 @@ class A2aController extends Controller
         } else {
             // --- Handle subsequent message for existing task ---
             if ($task->a2a_status !== Config::get('a2a.status_map.awaiting_input') && $task->a2a_status !== 'input-required') {
-                 return response()->json([
+                return response()->json([
                     'error' => 'Task is not currently awaiting input.',
                     'taskId' => $task->a2a_task_id,
                     'status' => $task->a2a_status,
-                 ], 409); // Conflict
+                ], 409); // Conflict
             }
 
             $nextSequenceId = ($task->a2a_last_message_sequence ?? 0) + 1;
 
             // Create the subsequent A2A Message record
             $task->a2aMessages()->create([
-                 'role' => $a2aMessagePayload['role'],
-                 'sequence_id' => $nextSequenceId,
-                 'parts' => $a2aMessagePayload['parts'],
-             ]);
+                'role' => $a2aMessagePayload['role'],
+                'sequence_id' => $nextSequenceId,
+                'parts' => $a2aMessagePayload['parts'],
+            ]);
 
             // Update task status back to 'working' / 'running'
             $task->status = 'running'; // Or appropriate internal state
@@ -118,18 +117,18 @@ class A2aController extends Controller
             $task->a2a_last_message_sequence = $nextSequenceId;
 
             // TODO: Add logic to notify the *running* job with the new input.
-             // This is the tricky part with background jobs. Options:
-             // 1. Event Broadcasting: Fire an event `NewInputReceived($taskId, $newInput)`
-             //    The running job needs to listen for this (complex).
-             // 2. Database Polling: The job occasionally checks a `new_input` field on the task model.
-             // 3. Cache/Redis: Store new input in Redis keyed by task ID, job checks Redis.
-             // Let's assume for now the *next* step in the agent pattern handles this (if using planner etc.)
-             // Or, if the job finished while waiting, we might need to re-dispatch.
-             // $task->meta['last_provided_input'] = $newInput; // Store for job to potentially pick up
+            // This is the tricky part with background jobs. Options:
+            // 1. Event Broadcasting: Fire an event `NewInputReceived($taskId, $newInput)`
+            //    The running job needs to listen for this (complex).
+            // 2. Database Polling: The job occasionally checks a `new_input` field on the task model.
+            // 3. Cache/Redis: Store new input in Redis keyed by task ID, job checks Redis.
+            // Let's assume for now the *next* step in the agent pattern handles this (if using planner etc.)
+            // Or, if the job finished while waiting, we might need to re-dispatch.
+            // $task->meta['last_provided_input'] = $newInput; // Store for job to potentially pick up
             $task->save();
 
-             // Decide if re-dispatch is needed based on your agent patterns' design
-             // ProcessTaskJob::dispatch($task->id, $task->pattern);
+            // Decide if re-dispatch is needed based on your agent patterns' design
+            // ProcessTaskJob::dispatch($task->id, $task->pattern);
 
         }
 
@@ -144,16 +143,16 @@ class A2aController extends Controller
     {
         // Load the latest agent message from the relationship
         $lastAgentA2AMessage = $task->a2aMessages()
-                                   ->where('role', 'agent')
-                                   ->orderByDesc('sequence_id')
-                                   ->first();
+            ->where('role', 'agent')
+            ->orderByDesc('sequence_id')
+            ->first();
 
         $lastAgentMessageFormatted = null;
         if ($lastAgentA2AMessage) {
             $lastAgentMessageFormatted = [
                 'role' => $lastAgentA2AMessage->role,
                 'parts' => $lastAgentA2AMessage->parts,
-                 'sequenceId' => $lastAgentA2AMessage->sequence_id,
+                'sequenceId' => $lastAgentA2AMessage->sequence_id,
             ];
         }
 
@@ -161,17 +160,17 @@ class A2aController extends Controller
         $a2aMeta = $task->a2a_meta ?? ['artifacts' => []];
         $artifacts = [];
         foreach ($a2aMeta['artifacts'] ?? [] as $artifactData) {
-             $artifacts[] = [
-                 'artifactId' => $artifactData['artifactId'] ?? Str::uuid()->toString(),
-                 'mimeType' => $artifactData['mimeType'] ?? 'application/octet-stream',
-                 'parts' => $artifactData['parts'] ?? [],
-                 'name' => $artifactData['name'] ?? null,
-             ];
+            $artifacts[] = [
+                'artifactId' => $artifactData['artifactId'] ?? Str::uuid()->toString(),
+                'mimeType' => $artifactData['mimeType'] ?? 'application/octet-stream',
+                'parts' => $artifactData['parts'] ?? [],
+                'name' => $artifactData['name'] ?? null,
+            ];
         }
 
         return [
             'taskId' => $task->a2a_task_id,
-            'status' => $task->a2a_status ?? Config::get('a2a.status_map.' . $task->status),
+            'status' => $task->a2a_status ?? Config::get('a2a.status_map.'.$task->status),
             'lastAgentMessage' => $lastAgentMessageFormatted, // Use formatted message from DB
             'artifacts' => $artifacts,
             // 'meta' => $task->meta ?? [], // Generally A2A spec doesn't expose internal meta

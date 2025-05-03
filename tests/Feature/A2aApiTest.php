@@ -19,7 +19,14 @@ it('creates a task and dispatches a job', function () {
         'message' => [
             'role' => 'user',
             'parts' => [
-                ['type' => 'text', 'text' => 'User message content'],
+                [
+                    'type' => 'text',
+                    'text' => 'User message content',
+                    'file' => [
+                        'mimeType' => 'text/plain',
+                        'uri' => 'http://example.com/file.txt',
+                    ],
+                ],
             ],
         ],
     ];
