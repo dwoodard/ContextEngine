@@ -15,6 +15,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
 
 class ProcessTaskJob implements ShouldQueue
 {
@@ -33,25 +35,82 @@ class ProcessTaskJob implements ShouldQueue
     public function handle()
     {
         $task = Task::find($this->taskId);
+        if (! $task || ! $task->a2a_task_id) {
+            return;
+        }
 
-        $task->update(['status' => 'running']);
+        $task->update([
+            'status' => 'running',
+            'a2a_status' => Config::get('a2a.status_map.running'),
+        ]);
 
         try {
             $agent = $this->resolvePattern($this->pattern);
+            $output = $agent->execute($task);
 
-            $output = $agent->execute($task);   // capture return value
+            $a2aMeta = $task->a2a_meta ?? ['messages' => [], 'artifacts' => []];
+            $finalAgentMessageParts = [];
+            $finalArtifacts = [];
 
-            // Persist result if the agent didn’t update the model itself
-            if (is_string($output) && empty($task->result)) {
-                $task->result = $output;
+            $finalResultText = is_string($output) ? $output : $task->result;
+            if (! empty($finalResultText)) {
+                $finalAgentMessageParts[] = [
+                    'type' => 'text',
+                    'text' => $finalResultText,
+                ];
+                if (empty($task->result)) {
+                    $task->result = $finalResultText;
+                }
             }
 
-            $task->update(['status' => 'completed']);
+            if (isset($task->meta['sub_results']) && is_array($task->meta['sub_results'])) {
+                $artifactParts = [];
+                foreach ($task->meta['sub_results'] as $key => $subResult) {
+                    $artifactParts[] = ['type' => 'text', 'text' => "Sub-result {$key}: ".$subResult];
+                }
+                if (! empty($artifactParts)) {
+                    $finalArtifacts[] = [
+                        'artifactId' => Str::uuid()->toString(),
+                        'mimeType' => 'text/plain',
+                        'parts' => $artifactParts,
+                        'name' => 'sub_task_results.txt',
+                    ];
+                }
+            }
+
+            if (! empty($finalAgentMessageParts)) {
+                $a2aMeta['messages'][] = [
+                    'role' => 'agent',
+                    'parts' => $finalAgentMessageParts,
+                    'sequenceId' => ($task->a2a_last_message_sequence ?? 0) + 1,
+                ];
+            }
+
+            $a2aMeta['artifacts'] = array_merge($a2aMeta['artifacts'] ?? [], $finalArtifacts);
+
+            $task->update([
+                'status' => 'completed',
+                'a2a_status' => Config::get('a2a.status_map.completed'),
+                'result' => $task->result,
+                'a2a_meta' => $a2aMeta,
+                'a2a_last_message_sequence' => $a2aMeta['messages'][count($a2aMeta['messages']) - 1]['sequenceId'] ?? $task->a2a_last_message_sequence,
+            ]);
+
         } catch (\Throwable $e) {
+            $a2aMeta = $task->a2a_meta ?? ['messages' => [], 'artifacts' => []];
+            $a2aMeta['messages'][] = [
+                'role' => 'agent',
+                'parts' => [['type' => 'text', 'text' => 'Task failed: '.$e->getMessage()]],
+                'sequenceId' => ($task->a2a_last_message_sequence ?? 0) + 1,
+            ];
+
             $task->update([
                 'status' => 'failed',
+                'a2a_status' => Config::get('a2a.status_map.failed'),
                 'result' => null,
                 'meta' => array_merge($task->meta ?? [], ['error' => $e->getMessage()]),
+                'a2a_meta' => $a2aMeta,
+                'a2a_last_message_sequence' => $a2aMeta['messages'][count($a2aMeta['messages']) - 1]['sequenceId'] ?? $task->a2a_last_message_sequence,
             ]);
             throw $e;
         }

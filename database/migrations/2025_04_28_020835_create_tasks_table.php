@@ -19,6 +19,10 @@ return new class extends Migration
             $table->text('result')->nullable();          // Final result from the agent(s)
             $table->string('status')->default('pending'); // Task status: 'pending','running','completed','failed'
             $table->json('meta')->nullable();            // (Optional) store additional data (sub-results, logs, memory, etc.)
+            $table->string('a2a_task_id')->unique()->nullable();
+            $table->string('a2a_status')->nullable()->index();
+            $table->unsignedBigInteger('a2a_last_message_sequence')->nullable();
+            $table->json('a2a_meta')->nullable();
         });
     }
 
@@ -27,6 +31,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('tasks', function (Blueprint $table) {
+            $table->dropColumn(['a2a_task_id', 'a2a_status', 'a2a_last_message_sequence', 'a2a_meta']);
+        });
+
         Schema::dropIfExists('tasks');
     }
 };

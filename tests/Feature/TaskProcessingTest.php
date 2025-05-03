@@ -75,6 +75,7 @@ test('ProcessTaskJob processes a task and updates its status and result', functi
         'input' => 'Explain quantum computing.',
         'pattern' => 'planner',
         'status' => 'pending',
+        'a2a_task_id' => 'test-a2a-id', // Ensure this field is set
     ]);
 
     $job = new ProcessTaskJob($task->id, 'planner');
