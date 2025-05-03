@@ -69,4 +69,23 @@ return [
         'input-required' => 'awaiting_input',
         // 'canceled' => 'canceled',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sample Configuration for Agent Card
+    |--------------------------------------------------------------------------
+    */
+    'a2a' => [
+        'agent' => 'Default Agent Name',
+        'protocol' => [
+            'capabilities' => ['task-processing', 'debate-simulation'],
+            'endpointBaseUrl' => env('APP_URL', 'http://localhost').'/.well-known/agent.json',
+            'authentication' => 'none',
+        ],
+        'status_map' => [
+            'pending' => 'pending',
+            'running' => 'running',
+            'awaiting_input' => 'awaiting_input',
+        ],
+    ],
 ];

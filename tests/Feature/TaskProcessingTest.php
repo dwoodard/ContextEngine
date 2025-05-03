@@ -86,3 +86,44 @@ test('ProcessTaskJob processes a task and updates its status and result', functi
     expect($task->status)->toBe('completed');
     expect($task->result)->not->toBeNull();
 });
+
+test('ProcessTaskJob sets final a2a_status correctly on success', function () {
+    $task = Task::factory()->create([
+        'input' => 'Explain quantum computing.',
+        'pattern' => 'planner',
+        'status' => 'pending',
+        'a2a_task_id' => 'test-a2a-id',
+    ]);
+
+    $job = new ProcessTaskJob($task->id, 'planner');
+    $job->handle();
+
+    $task->refresh();
+
+    expect($task->status)->toBe('completed');
+    expect($task->a2a_status)->toBe('completed');
+});
+
+test('ProcessTaskJob sets a2a_status to failed on exception', function () {
+    $task = Task::factory()->create([
+        'input' => 'Explain quantum computing.',
+        'pattern' => 'planner',
+        'status' => 'pending',
+        'a2a_task_id' => 'test-a2a-id',
+    ]);
+
+    $mockJob = $this->mock(ProcessTaskJob::class, function ($mock) {
+        $mock->shouldReceive('handle')->andThrow(new \Exception('Simulated failure'));
+    });
+
+    try {
+        $mockJob->handle();
+    } catch (\Exception $e) {
+        // Exception is expected
+    }
+
+    $task->refresh();
+
+    expect($task->status)->toBe('failed');
+    expect($task->a2a_status)->toBe('failed');
+});

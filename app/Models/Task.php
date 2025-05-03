@@ -49,4 +49,9 @@ class Task extends Model
         //     $this->attributes['status'] = $internalStatus;
         // }
     }
+
+    public function a2aMessages()
+    {
+        return $this->hasMany(A2AMessage::class);
+    }
 }
