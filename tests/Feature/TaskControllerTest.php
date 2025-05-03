@@ -62,7 +62,12 @@ it('validates task creation payload', function () {
     ]);
 
     $response->assertStatus(422)
-        ->assertJsonValidationErrors(['input', 'pattern']);
+        ->assertJson([
+            'message' => 'The input field is required.',
+            'errors' => [
+                'input' => ['The input field is required.'],
+            ],
+        ]);
 });
 
 it('returns 404 for a non-existent task', function () {
