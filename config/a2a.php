@@ -30,16 +30,14 @@ return [
 
         // List of capabilities supported by this agent.
         'capabilities' => [
-            'tasks/send',
-            'tasks/sendSubscribe',
-            'streaming',
+            'tasks/send' => true,
+            'tasks/sendSubscribe' => true,
+            'streaming' => true,
         ],
 
         // Authentication methods supported.
         'authentication' => [
-            [
-                'type' => 'bearer', // For Laravel Sanctum API Tokens
-            ],
+            'schemes' => ['bearer'],
         ],
     ],
 
@@ -65,24 +63,5 @@ return [
         'completed' => 'completed',
         'failed' => 'failed',
         'input-required' => 'awaiting_input',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sample Configuration for Agent Card
-    |--------------------------------------------------------------------------
-    */
-    'a2a' => [
-        'agent' => 'Default Agent Name',
-        'protocol' => [
-            'capabilities' => ['task-processing', 'debate-simulation'],
-            'endpointBaseUrl' => env('APP_URL', 'http://localhost').'/.well-known/agent.json',
-            'authentication' => 'none',
-        ],
-        'status_map' => [
-            'pending' => 'pending',
-            'running' => 'running',
-            'awaiting_input' => 'awaiting_input',
-        ],
     ],
 ];
