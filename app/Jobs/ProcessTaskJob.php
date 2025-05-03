@@ -50,19 +50,22 @@ class ProcessTaskJob implements ShouldQueue
             $nextSequenceId = ($task->a2a_last_message_sequence ?? 0) + 1;
             $finalResultText = is_string($output) ? $output : $task->result;
 
-            if (!empty($finalResultText)) {
+            if (! empty($finalResultText)) {
                 $task->a2aMessages()->create([
                     'role' => 'agent',
                     'sequence_id' => $nextSequenceId,
                     'parts' => [['type' => 'text', 'text' => $finalResultText]],
                 ]);
                 $task->a2a_last_message_sequence = $nextSequenceId; // Update sequence on task
+
+                // Explicitly update the result field
+                $task->result = $finalResultText;
             }
 
             $task->update([
                 'status' => 'completed',
                 'a2a_status' => Config::get('a2a.status_map.completed'),
-                'result' => $task->result,
+                'result' => $task->result, // Ensure result is saved
                 'a2a_last_message_sequence' => $task->a2a_last_message_sequence, // Save the updated sequence
             ]);
 
@@ -71,7 +74,7 @@ class ProcessTaskJob implements ShouldQueue
             $task->a2aMessages()->create([
                 'role' => 'agent',
                 'sequence_id' => $nextSequenceId,
-                'parts' => [['type' => 'text', 'text' => 'Task failed: ' . $e->getMessage()]],
+                'parts' => [['type' => 'text', 'text' => 'Task failed: '.$e->getMessage()]],
             ]);
             $task->a2a_last_message_sequence = $nextSequenceId; // Update sequence on task
 
