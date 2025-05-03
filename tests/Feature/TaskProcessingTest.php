@@ -13,6 +13,7 @@ test('example', function () {
 test('a task can be created and dispatched for processing', function () {
     // Fake the queue to intercept job dispatches
     Queue::fake();
+    $user = \App\Models\User::factory()->create();
 
     $payload = [
         'input' => 'Explain quantum computing.',
@@ -20,7 +21,10 @@ test('a task can be created and dispatched for processing', function () {
     ];
 
     // Send a POST request to create the task
-    $response = $this->postJson('/api/tasks', $payload);
+    $response = $this->postJson('/api/tasks', $payload, [
+        'Authorization' => 'Bearer ' . $user->createToken('TestToken')->plainTextToken
+    ]);
+
 
     // Assert that the response has the expected status and structure
     $response->assertStatus(202)
