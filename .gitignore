@@ -22,3 +22,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+changes.diff
+pest.txt
+project_temp_file.txt
