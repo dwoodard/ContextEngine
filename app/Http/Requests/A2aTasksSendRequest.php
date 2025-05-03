@@ -29,18 +29,28 @@ class A2aTasksSendRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                'unique:tasks,a2a_task_id,NULL,id,deleted_at,NULL', // Check for unique task ID
+                // Removed Rule::unique as the controller logic and database constraint handle this
             ],
             'message' => ['required', 'array'],
             'message.role' => ['required', Rule::in(['user'])],
-            'message.parts' => ['required', 'array', 'min:1'],
+            'message.parts' => [
+                'required',
+                'array',
+                'min:1',
+                function ($attribute, $value, $fail) {
+                    $hasTextPart = collect($value)->contains(fn ($part) => $part['type'] === 'text' && ! empty($part['text']));
+                    if (! $hasTextPart) {
+                        $fail('The message must contain at least one text part with non-empty text.');
+                    }
+                },
+            ],
             'message.parts.*' => ['required', 'array'],
             'message.parts.*.type' => ['required', Rule::in(['text', 'file', 'data'])],
             'message.parts.*.text' => ['required_if:message.parts.*.type,text', 'string'],
             'message.parts.*.file' => ['required_if:message.parts.*.type,file', 'array'],
-            'message.parts.*.file.mimeType' => ['required', 'string'],
-            'message.parts.*.file.uri' => ['required_without:message.parts.*.file.bytes', 'string', 'url'],
-            'message.parts.*.file.bytes' => ['required_without:message.parts.*.file.uri', 'string'],
+            'message.parts.*.file.mimeType' => ['required_with:message.parts.*.file', 'string'],
+            'message.parts.*.file.uri' => ['nullable', 'string', 'url'],
+            'message.parts.*.file.bytes' => ['nullable', 'string'],
             'message.parts.*.data' => ['required_if:message.parts.*.type,data', 'array'],
         ];
     }
