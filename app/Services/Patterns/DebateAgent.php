@@ -14,13 +14,25 @@ class DebateAgent implements AgentPattern
 
         // Agent A: proponent perspective
         $promptA = "You are Agent A. You strongly support or agree with the following statement/question and provide an answer arguing for it:\nQ: {$userQuery}";
-        $respA = Prism::text()->withPrompt($promptA)->asText();
+        $respA = Prism::text()
+            ->using('ollama', 'llama3.2:latest')
+            ->withPrompt($promptA)->asText();
         $answerA = $respA->text ?? '';
+
+        // dump(
+        //     $promptA,
+        //     $answerA);
 
         // Agent B: opponent/skeptical perspective
         $promptB = "You are Agent B. You are skeptical or take an opposing view on the statement/question and provide an answer arguing against it or highlighting issues:\nQ: {$userQuery}";
-        $respB = Prism::text()->withPrompt($promptB)->asText();
+        $respB = Prism::text()
+            ->using('ollama', 'llama3.2:latest')
+            ->withPrompt($promptB)->asText();
         $answerB = $respB->text ?? '';
+
+        // dump(
+        //     $promptB,
+        //     $answerB);
 
         // Store both answers in meta for reference
         $task->meta = [
@@ -31,7 +43,9 @@ class DebateAgent implements AgentPattern
 
         // Moderator: form a consensus or choose the best answer
         $moderatorPrompt = "Agent A answered:\n{$answerA}\n\nAgent B answered:\n{$answerB}\n\nYou are a moderator. Combine the insights from both agents and provide the best final answer to the question: {$userQuery}";
-        $respM = Prism::text()->withPrompt($moderatorPrompt)->asText();
+        $respM = Prism::text()
+            ->using('ollama', 'llama3.2:latest')
+            ->withPrompt($moderatorPrompt)->asText();
         $finalAnswer = $respM->text ?? '';
 
         // Update task result with the consensus answer
