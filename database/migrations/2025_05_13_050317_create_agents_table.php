@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->string('class'); // Fully qualified class name of the agent
             $table->string('url')->nullable(); // Optional: useful for remote agents
+            $table->string('handle')->unique();
             $table->json('skills')->nullable();
             $table->boolean('is_public')->default(false);
             $table->timestamps();

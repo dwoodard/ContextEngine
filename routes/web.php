@@ -8,12 +8,7 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('/agent', function () {
-    $prompt = 'what is the the capital of France?';
-    (new \App\Agents\RouterAgent)->handle(
-        $prompt
-    );
-})->name('agent');
+Route::get('/agent/{handle}', [AgentController::class, 'show'])->name('agent.show');
 
 Route::get('/.well-known/agents.json', function () {
     /*
@@ -27,9 +22,11 @@ Route::get('/.well-known/agents.json', function () {
         supported skills, and authentication requirements.
     */
     $agents = \App\Models\Agent::where('is_public', true)->get()->map(function ($agent) {
+        $url = route('agent.show', ['handle' => $agent->handle]);
+
         return [
             'name' => $agent->name,
-            'url' => route('agent', ['id' => $agent->id]),
+            'url' => $url,
         ];
     });
 
