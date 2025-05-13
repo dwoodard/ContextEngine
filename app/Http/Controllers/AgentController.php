@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agent;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AgentController extends Controller
 {
@@ -12,7 +13,11 @@ class AgentController extends Controller
      */
     public function index()
     {
-        return response()->json(Agent::all());
+        $agents = Agent::all(['name', 'handle']);
+
+        return Inertia::render('Agents/Index', [
+            'agents' => $agents,
+        ]);
     }
 
     /**
@@ -45,9 +50,13 @@ class AgentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Agent $agent)
+    public function show($handle)
     {
-        return response()->json($agent);
+        $agent = Agent::where('handle', $handle)->firstOrFail();
+
+        return Inertia::render('Agents/Show', [
+            'agent' => $agent,
+        ]);
     }
 
     /**
